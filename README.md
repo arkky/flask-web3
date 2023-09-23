@@ -20,8 +20,9 @@ Steps:
 1. `git clone https://github.com/arkky/flask-web3.git`
 2. `cd flask-web3`
 3. `pip3 install -r requirements.txt`
-4. `python3 main.py` # server will launch
-5. If you want to try backend server then you need to send requests (POST, GET) via Postman or etc.
+4. `python3 models.py` # to init sqlite DB
+5. `flask --app app run --debug` # server will launch
+6. If you want to try backend server then you need to send requests (POST, GET) via Postman or etc.
 
 
 ### Made by me [Kargashinskiy Alexander]
