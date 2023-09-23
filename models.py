@@ -21,5 +21,12 @@ class User(Base):
         return f'<User {self.name!r}>'
 
 
+class Auth(Base):
+    __tablename__ = "auth"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    jwt_token: Mapped[str]
+
+
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
