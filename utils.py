@@ -1,6 +1,7 @@
 import re
 from web3 import Web3
 from eth_account.messages import encode_defunct
+from eth_account.account import Account
 
 PRIVATE_KEY = "0d2dacbdc69bee88720ea2f9d5652ad0941303c6fe4e9e269869e312279970a0"
 WALLET_ADDR = "0x0914B7665920386a9F05a53e83d1c999B25Eedb5"
@@ -17,7 +18,7 @@ def validate_password(password):
     return bool(match)
 
 def create_token(user_id):
-    hash = Web3.keccak(hex(user_id))
-    eth_signed_message = encode_defunct(hexstr=hash)
-    private_signed_message = Web3.eth.account.sign_message(eth_signed_message, private_key=PRIVATE_KEY)
-    return private_signed_message
+    hash = Web3.keccak(user_id)
+    eth_signed_message = encode_defunct(hexstr=hash.hex())
+    private_signed_message = Account.sign_message(eth_signed_message, private_key=PRIVATE_KEY)
+    return private_signed_message.signature.hex()

@@ -1,22 +1,16 @@
 from flask import Flask, request
-from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 import traceback
 
 from utils import validate_email, validate_password, create_token
-from database import Base
-from database import db_session
+from database import engine
 from models import User
 
 
 app = Flask(__name__)
-engine = create_engine("sqlite:///users.db", echo=True)
-Base.metadata.create_all(engine)
 
-
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    db_session.remove()
 
 @app.post("/sign_up")
 def sign_up():
@@ -31,24 +25,52 @@ def sign_up():
                 surname = json_data.get("surname")
                 eth_address = json_data.get("eth_address")
                 name = json_data.get("name")
-                try:
-                    user = User(name, surname, email, eth_address, password)
-                    db_session.add(user)
-                except Exception as e:
-                    traceback.print_exc()
-                    return "Error on creating user"
-                finally:
-                    db_session.remove()
-                
-                token = create_token(user.id)
-                try:
-                    pass
-                    db_session.commit()
-                except Exception as e:
-                    traceback.print_exc()
-                    db_session.rollback()
-                    return "Error on creating token"
 
+                # check user in db
+                with Session(engine) as session:
+                    stmt = select(User.id).where(User.email == email)
+                    result = session.scalars(stmt).all()
+                    if result:
+                        return "You're already created user with this email"
+
+                # add user to db
+                with Session(engine) as session:
+                    try:
+                        usr = User(
+                            name=name,
+                            surname=surname,
+                            email=email,
+                            eth_address=eth_address,
+                            password=password
+                        )
+                        session.add(usr)
+                    except:
+                        traceback.print_exc()
+                        session.rollback()
+                        raise
+                    else:
+                        session.commit()
+
+                # get id of the user
+                with Session(engine) as session:
+                    stmt = select(User.id).where(User.email == email)
+                    user_id = session.scalars(stmt).one()
+   
+                # update signature to the user
+                signature = create_token(user_id)
+                with Session(engine) as session:
+                    try:
+                        stmt = select(User).where(User.id == user_id)
+                        usr = session.scalars(stmt).one()
+                        usr.signature = signature
+                    except:
+                        traceback.print_exc()
+                        session.rollback()
+                        raise
+                    else:
+                        session.commit()
+                
+                return {"user_id": user_id, "signature": signature}
             else:
                 return "Incorrect email or password"
         else:
